@@ -1,5 +1,7 @@
 from cv2 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow import keras
 
 
 def bgr_to_hsv(img):
@@ -43,8 +45,9 @@ def get_by_indexes(arr, indexes):
 
 
 IMG_NUM = 7
-WHITE_SENSITIVITY = 80
+WHITE_SENSITIVITY = 70
 BAR_WIDTH = 800
+DIGIT_SIZE = 28
 
 if __name__ == '__main__':
     img = cv2.imread('./bars_img/bar_' + str(IMG_NUM) + '.jpg')
@@ -52,11 +55,11 @@ if __name__ == '__main__':
     hsv = bgr_to_hsv(img)
 
     lower_white = np.array([78, 0, 255 - WHITE_SENSITIVITY])
-    upper_white = np.array([138, 255 - WHITE_SENSITIVITY, 255])
+    upper_white = np.array([138, WHITE_SENSITIVITY, 255])
 
     mask = cv2.inRange(hsv, lower_white, upper_white)
 
-    img = cv2.bitwise_and(img, img, mask=mask)
+    img_masked = cv2.bitwise_and(img, img, mask=mask)
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     rects = contours_to_sorted_rects(contours)
@@ -70,7 +73,7 @@ if __name__ == '__main__':
         exit(1)
 
     # crop barcode
-    barcode_crop = crop_rect(img, rects[0])
+    barcode_crop = crop_rect(img_masked, rects[0])
     bar_w, bar_h = barcode_crop.shape[1], barcode_crop.shape[0]
     ratio = bar_w / bar_h
     print(f'Barcode size: ({bar_w}, {bar_h}), ratio: {round(ratio, 2)}')
@@ -136,15 +139,32 @@ if __name__ == '__main__':
 
     # get result image with barcode digits
     max_h = max(bounding_rects, key=lambda rect: rect[3])[3]
-    numbers_img = []
+    digits = []
     for x, y, w, h in bounding_rects:
         cv2.rectangle(barcode_crop, (x, y), (x + w, y + h), (0, 0, 255), 1)
         roi = bar_thresh[y:y + h, x:x + w]
+
+        k = max(w, max_h + round(0.4 * max_h))
         roi = cv2.resize(roi, (w, max_h))
-        numbers_img.append(roi)
+        h = max_h
+        padding = (max((k - h) // 2, 0), max((k - w) // 2, 0))
+        roi = cv2.copyMakeBorder(
+            roi,
+            padding[0], padding[0], padding[1], padding[1],
+            cv2.BORDER_CONSTANT,
+            None,
+            value=0
+        )
+        roi = cv2.resize(roi, (28, 28))
+        roi = cv2.erode(roi, np.ones((2, 2), np.uint8), iterations=1)
 
-    numbers_img = np.hstack(numbers_img)
+        digits.append(roi)
 
-    cv2.imshow('numbers_img', numbers_img)
+    digits_img = np.hstack(digits)
 
+    # plt.imshow(digits[8], cmap='Greys')
+    # plt.show()
+
+    cv2.imshow('barcode', barcode_crop)
+    cv2.imshow('digits_img', digits_img)
     cv2.waitKey(0)
