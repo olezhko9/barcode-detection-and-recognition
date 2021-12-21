@@ -167,4 +167,21 @@ if __name__ == '__main__':
 
     cv2.imshow('barcode', barcode_crop)
     cv2.imshow('digits_img', digits_img)
+    # cv2.waitKey(0)
+
+    model = keras.models.load_model("ocr_model_2")
+    bar_code_str = ""
+    for digit_img in digits:
+        data = digit_img / 255
+        data = np.expand_dims(data, -1)
+        data = np.expand_dims(data, 0)
+        pred = model.predict(data)[0]
+        pred_number = np.argmax(pred)
+        print(pred_number, np.max(pred))
+
+        bar_code_str += str(pred_number)
+
+    print(bar_code_str)
+    cv2.putText(img, bar_code_str, (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+    cv2.imshow('img', img)
     cv2.waitKey(0)
