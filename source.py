@@ -2,6 +2,8 @@ from cv2 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from cnn import network, layers
+import multiprocessing as mp
+from time import time
 
 
 def bgr_to_hsv(img):
@@ -42,6 +44,32 @@ def crop_rect(img, rect):
 
 def get_by_indexes(arr, indexes):
     return np.array(arr, dtype=object)[indexes]
+
+
+def process_and_predict(bounding_rect, max_h, model):
+    x, y, w, h = bounding_rect
+    cv2.rectangle(barcode_crop, (x, y), (x + w, y + h), (0, 0, 255), 1)
+    roi = bar_thresh[y:y + h, x:x + w]
+
+    k = max(w, max_h + round(0.4 * max_h))
+    roi = cv2.resize(roi, (w, max_h))
+    h = max_h
+    padding = (max((k - h) // 2, 0), max((k - w) // 2, 0))
+    roi = cv2.copyMakeBorder(
+        roi,
+        padding[0], padding[0], padding[1], padding[1],
+        cv2.BORDER_CONSTANT,
+        None,
+        value=0
+    )
+    roi = cv2.resize(roi, (28, 28))
+    roi = cv2.erode(roi, np.ones((2, 2), np.uint8), iterations=1)
+
+    pred = model.predict(roi)
+    pred_number = np.argmax(pred)
+    # print(pred_number, np.max(pred))
+
+    return str(pred_number)
 
 
 IMG_NUM = 7
@@ -139,37 +167,9 @@ if __name__ == '__main__':
 
     # get result image with barcode digits
     max_h = max(bounding_rects, key=lambda rect: rect[3])[3]
-    digits = []
-    bar_code_str = ""
-
-    for x, y, w, h in bounding_rects:
-        cv2.rectangle(barcode_crop, (x, y), (x + w, y + h), (0, 0, 255), 1)
-        roi = bar_thresh[y:y + h, x:x + w]
-
-        k = max(w, max_h + round(0.4 * max_h))
-        roi = cv2.resize(roi, (w, max_h))
-        h = max_h
-        padding = (max((k - h) // 2, 0), max((k - w) // 2, 0))
-        roi = cv2.copyMakeBorder(
-            roi,
-            padding[0], padding[0], padding[1], padding[1],
-            cv2.BORDER_CONSTANT,
-            None,
-            value=0
-        )
-        roi = cv2.resize(roi, (28, 28))
-        roi = cv2.erode(roi, np.ones((2, 2), np.uint8), iterations=1)
-
-        digits.append(roi)
-
-    digits_img = np.hstack(digits)
-    np.save('digits', digits)
-
-    # plt.imshow(digits[8], cmap='Greys')
-    # plt.show()
 
     cv2.imshow('barcode', barcode_crop)
-    cv2.imshow('digits_img', digits_img)
+    # cv2.imshow('digits_img', digits_img)
 
     n_filters = 8
     lr = 0.01
@@ -182,15 +182,13 @@ if __name__ == '__main__':
     model.add_layer(layers.Softmax(13 * 13 * n_filters, 10))
     model.load('./cnn/weights-10.pkl')
 
-    bar_code_str = ""
-    for digit_img in digits:
-        pred = model.predict(digit_img)
-        pred_number = np.argmax(pred)
-        print(pred_number, np.max(pred))
-
-        bar_code_str += str(pred_number)
-
+    start_time = time()
+    pool = mp.Pool(4)
+    bar_code_digits = pool.starmap(process_and_predict, [(rect, max_h, model) for rect in bounding_rects])
+    bar_code_str = "".join(bar_code_digits)
+    print(time() - start_time)
     print(bar_code_str)
+
     cv2.putText(img, bar_code_str, (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
     cv2.imshow('img', img)
     cv2.waitKey(0)
