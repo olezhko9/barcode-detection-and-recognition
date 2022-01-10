@@ -1,7 +1,7 @@
 from cv2 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from tensorflow import keras
+from cnn import network, layers
 
 
 def bgr_to_hsv(img):
@@ -41,7 +41,7 @@ def crop_rect(img, rect):
 
 
 def get_by_indexes(arr, indexes):
-    return np.array(arr)[indexes]
+    return np.array(arr, dtype=object)[indexes]
 
 
 IMG_NUM = 7
@@ -140,6 +140,8 @@ if __name__ == '__main__':
     # get result image with barcode digits
     max_h = max(bounding_rects, key=lambda rect: rect[3])[3]
     digits = []
+    bar_code_str = ""
+
     for x, y, w, h in bounding_rects:
         cv2.rectangle(barcode_crop, (x, y), (x + w, y + h), (0, 0, 255), 1)
         roi = bar_thresh[y:y + h, x:x + w]
@@ -161,21 +163,27 @@ if __name__ == '__main__':
         digits.append(roi)
 
     digits_img = np.hstack(digits)
+    np.save('digits', digits)
 
     # plt.imshow(digits[8], cmap='Greys')
     # plt.show()
 
     cv2.imshow('barcode', barcode_crop)
     cv2.imshow('digits_img', digits_img)
-    # cv2.waitKey(0)
 
-    model = keras.models.load_model("ocr_model_2")
+    n_filters = 8
+    lr = 0.01
+    epochs = 5
+
+    model = network.Network()
+    model.add_layer(layers.Conv(num_filters=n_filters, kernel_size=3))
+    model.add_layer(layers.MaxPool(pool_size=2))
+    model.add_layer(layers.Softmax(13 * 13 * n_filters, 10))
+    model.load('./cnn/weights.pkl')
+
     bar_code_str = ""
     for digit_img in digits:
-        data = digit_img / 255
-        data = np.expand_dims(data, -1)
-        data = np.expand_dims(data, 0)
-        pred = model.predict(data)[0]
+        pred = model.predict(digit_img)
         pred_number = np.argmax(pred)
         print(pred_number, np.max(pred))
 
