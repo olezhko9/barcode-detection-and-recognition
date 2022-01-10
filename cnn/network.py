@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 
 
 class Network:
@@ -58,6 +59,21 @@ class Network:
     def predict(self, data):
         return self.forward(data)
 
+    def save(self, weights_file):
+        obj = {}
+        for layer in self.layers:
+            weights = layer.get_weights()
+            obj[layer.name] = weights
+
+        with open(weights_file, 'wb') as handle:
+            pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def load(self, weights_file):
+        with open(weights_file, 'rb') as handle:
+            weights = pickle.load(handle)
+            for layer in self.layers:
+                layer.load_weights(weights[layer.name])
+
 
 if __name__ == '__main__':
     import layers
@@ -77,6 +93,7 @@ if __name__ == '__main__':
 
     start = time()
     net.train(train_images, train_labels, lr, epochs)
+    net.save('./weights.pkl')
     print(time() - start)
 
     print('*' * 30)

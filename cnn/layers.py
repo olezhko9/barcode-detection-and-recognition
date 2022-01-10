@@ -49,6 +49,12 @@ class Conv:
         # return d_L_d_input
         return None
 
+    def get_weights(self):
+        return {'weights': self.filters}
+
+    def load_weights(self, weights):
+        self.filters = weights['weights']
+
 
 class MaxPool:
     def __init__(self, pool_size=2, name='pool'):
@@ -91,6 +97,12 @@ class MaxPool:
                             d_L_d_input[i * 2 + i2, j * 2 + j2, f2] = d_L_d_out[i, j, f2]
 
         return d_L_d_input
+
+    def get_weights(self):
+        return
+
+    def load_weights(self, weights):
+        pass
 
 
 class Softmax:
@@ -137,3 +149,10 @@ class Softmax:
             self.biases -= learn_rate * d_L_d_b
 
             return d_L_d_inputs.reshape(self.last_input_shape)
+
+    def get_weights(self):
+        return {'weights': self.weights, 'bias': self.biases}
+
+    def load_weights(self, weights):
+        self.weights = weights['weights']
+        self.biases = weights['bias']
