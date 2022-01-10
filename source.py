@@ -180,7 +180,7 @@ if __name__ == '__main__':
     model.add_layer(layers.Conv(num_filters=n_filters, kernel_size=3))
     model.add_layer(layers.MaxPool(pool_size=2))
     model.add_layer(layers.Softmax(13 * 13 * n_filters, 10))
-    model.load('./cnn/weights.pkl')
+    model.load('./cnn/weights-10.pkl')
 
     bar_code_str = ""
     for digit_img in digits:

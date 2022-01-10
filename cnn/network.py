@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
     n_filters = 8
     lr = 0.01
-    epochs = 5
+    epochs = 10
 
     net = Network()
     net.add_layer(layers.Conv(num_filters=n_filters, kernel_size=3))
@@ -93,5 +93,5 @@ if __name__ == '__main__':
 
     start = time()
     net.train(train_images, train_labels, lr, epochs)
-    net.save('./weights.pkl')
+    net.save('./weights-10.pkl')
     print(time() - start)
