@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 from cv2 import cv2
 
-base_dir = './Digits'
+base_dir = 'digits_dataset'
 x_train = []
 y_train = []
 for label in sorted(os.listdir(base_dir)):

@@ -175,6 +175,7 @@ if __name__ == '__main__':
     lr = 0.01
     epochs = 5
 
+    # model = keras.models.load_model("keras_model")
     model = network.Network()
     model.add_layer(layers.Conv(num_filters=n_filters, kernel_size=3))
     model.add_layer(layers.MaxPool(pool_size=2))

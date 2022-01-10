@@ -71,7 +71,7 @@ model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accur
 
 model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_split=0.1)
 
-model.save("ocr_model_2")
+model.save("keras_model")
 
 score = model.evaluate(x_test, y_test, verbose=0)
 print("Test loss:", score[0])
