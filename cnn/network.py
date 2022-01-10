@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
     n_filters = 8
     lr = 0.01
-    epochs = 3
+    epochs = 5
 
     net = Network()
     net.add_layer(layers.Conv(num_filters=n_filters, kernel_size=3))
@@ -95,14 +95,3 @@ if __name__ == '__main__':
     net.train(train_images, train_labels, lr, epochs)
     net.save('./weights.pkl')
     print(time() - start)
-
-    print('*' * 30)
-
-    digits = np.load('../digits.npy')
-    barcode = ''
-    for dig in digits:
-        out = net.predict(dig)
-        barcode += str(np.argmax(out))
-        print(np.argmax(out), np.max(out))
-
-    print(barcode)
