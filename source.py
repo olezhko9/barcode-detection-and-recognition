@@ -69,8 +69,20 @@ def process_and_predict(bounding_rect, max_h, model):
     pred_number = np.argmax(pred)
     # print(pred_number, np.max(pred))
 
-    return str(pred_number)
+    return pred_number
 
+
+def validate_barcode(barcode_digits):
+    if len(barcode_digits) != 13:
+        return False
+
+    even_sum = sum([d for d in barcode_digits[1::2]])
+    odd_sum = sum([d for d in barcode_digits[0:-1:2]])
+    t = even_sum * 3 + odd_sum
+    t = t % 10
+    t = (10 - t) % 10
+
+    return t == barcode_digits[-1]
 
 IMG_NUM = 7
 WHITE_SENSITIVITY = 70
@@ -185,10 +197,12 @@ if __name__ == '__main__':
     start_time = time()
     pool = mp.Pool(4)
     bar_code_digits = pool.starmap(process_and_predict, [(rect, max_h, model) for rect in bounding_rects])
-    bar_code_str = "".join(bar_code_digits)
+    bar_code_str = "".join(map(str, bar_code_digits))
     print(time() - start_time)
-    print(bar_code_str)
+    print('Barcode is:', bar_code_str)
 
     cv2.putText(img, bar_code_str, (100, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
     cv2.imshow('img', img)
     cv2.waitKey(0)
+
+    print('Barcode is valid:', validate_barcode(bar_code_digits))
